@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "character/character.h"
 #include "pqueue.h"
@@ -24,10 +25,23 @@ struct s_node {
 INVREP
 ============================================================================ */
 
-/*static bool invrep(pqueue q) {
+static bool invrep(pqueue q)
+{
+  bool flag=true;
+  struct s_node *prev=NULL;
+  struct s_node *curr=q->front;
+  unsigned int len=0;
+  while(curr!=NULL && flag){
+    prev=curr;
+    flag = flag && curr->prio <= prev->prio; // colas de prioridad [propiedad e1>=e2]
+    curr=curr->next;
+    prev=prev->next;
+    len=len+1;
+  }
+  bool len_vs_size = q->size==len; // verificar que el size de retorno esta ok
+  return len_vs_size && flag;
+}
 
-  return true;
-*/
 
 /* ============================================================================
 NEW
@@ -47,14 +61,14 @@ ENQUEUE
 
 static float calculate_priority(Character character) {
   unsigned int baseInitiative=character_agility(character);
-  charttype_t modificador = character_ctype(character);
+  charttype_t modificador=character_ctype(character);
   bool isAlive = character_is_alive(character);
   float iniciative = 1;
   if(modificador==agile){
     iniciative = baseInitiative * 1.5 * isAlive;
   }
   if(modificador==tank){
-    iniciative = baseInitiative * 0.8 *isAlive;
+    iniciative = baseInitiative * 0.8 * isAlive;
   }else{
     iniciative = baseInitiative * modificador * isAlive;
   }
@@ -74,7 +88,7 @@ static struct s_node *create_node(Character character) {
 }
 
 pqueue pqueue_enqueue(pqueue q, Character character) {
-  //assert(invrep(q));
+  assert(invrep(q));
   struct s_node *new_node = create_node(character);
   struct s_node *prev_node = NULL;
   struct s_node *curr_node =NULL;
@@ -111,10 +125,12 @@ PEEKS
 ============================================================================ */
 
 Character pqueue_peek(pqueue q) {
+  assert(invrep(q));
   return q->front->c;
 }
 
 float pqueue_peek_priority(pqueue q) {
+  assert(invrep(q));
   return q->front->prio;
 }
 
@@ -123,29 +139,22 @@ SIZE
 ============================================================================ */
 
 unsigned int pqueue_size(pqueue q) {
-  //assert(invrep(q));
+  assert(invrep(q));
   return q->size;
 }
 
 /* ============================================================================
 COPY
 ============================================================================ */
-static struct s_node *node_copy(Character c)
-{
-  struct s_node *clone = create_node(c);
-  
-  return clone;
-
-}
-
 pqueue pqueue_copy(pqueue q) {
     pqueue cpy = pqueue_empty(); 
     struct s_node *tmp = q->front;
 
     while (tmp != NULL) {
-        struct s_node *clone = node_copy(tmp->c); 
-        cpy = pqueue_enqueue(cpy, clone->c);
+        Character clone = character_copy(tmp->c); // usar! character_copy + enqueue
+        pqueue_enqueue(cpy, clone);
         tmp = tmp->next;
+
     }
 
     assert(pqueue_size(cpy) == pqueue_size(q));
@@ -158,6 +167,7 @@ DESTROY!
 ============================================================================ */
 static struct s_node *destroy_node(struct s_node *node) {
   assert(node != NULL);
+  character_destroy(node->c); // faltaba deletear el character
   free(node);
   node=NULL;
   assert(node == NULL);
@@ -165,7 +175,7 @@ static struct s_node *destroy_node(struct s_node *node) {
 }
 
 pqueue pqueue_dequeue(pqueue q) {
-  //assert(invrep(q));
+  assert(invrep(q));
   struct s_node *killme = q->front;
   q->front=q->front->next;
   destroy_node(killme);
