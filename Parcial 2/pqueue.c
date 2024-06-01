@@ -144,14 +144,14 @@ unsigned int pqueue_size(pqueue q) {
 }
 
 /* ============================================================================
-COPY
+COPY // usar! character_copy + enqueue
 ============================================================================ */
-pqueue pqueue_copy(pqueue q) {
+pqueue pqueue_copy(pqueue q) { 
     pqueue cpy = pqueue_empty(); 
     struct s_node *tmp = q->front;
 
     while (tmp != NULL) {
-        Character clone = character_copy(tmp->c); // usar! character_copy + enqueue
+        Character clone = character_copy(tmp->c); 
         pqueue_enqueue(cpy, clone);
         tmp = tmp->next;
 
